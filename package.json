@@ -4,13 +4,18 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node main.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@chainsafe/libp2p-noise": "^5.0.1",
+    "@nodeutils/defaults-deep": "^1.1.0",
     "dag-jose": "^1.0.0",
     "ipfs-http-client": "^55.0.0",
-    "libp2p": "^0.35.8"
+    "libp2p": "^0.35.8",
+    "libp2p-mplex": "^0.10.5",
+    "libp2p-tcp": "^0.17.2",
+    "uint8arrays": "^3.0.0"
   }
 }
