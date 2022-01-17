@@ -4,7 +4,7 @@ const TCP = require('libp2p-tcp')
 const mplex = require('libp2p-mplex')
 const { NOISE } = require('@chainsafe/libp2p-noise')
 const defaultsDeep = require('@nodeutils/defaults-deep')
-const libp2p = require('../../..')
+const libp2p = require('libp2p')
 
 async function createLibp2p(_options) {
     const defaults = {
