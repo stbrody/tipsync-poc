@@ -4,6 +4,7 @@ const IpfsClient = require('ipfs-http-client')
 const { StreamID } = require('@ceramicnetwork/streamid')
 const PeerID = require('peer-id')
 const multihashes = require('multihashes')
+const CID = require('cids')
 // const { EventTypes } = require('ipfs-core-types')  // TODO: why does this fail?
 
 const createLibp2p = require('./libp2p-node')
@@ -24,12 +25,32 @@ async function main() {
     console.log(`streamid: ${STREAM_ID.toString()}`)
 
     // Encode StreamID as PeerID
-    const peerid = new PeerID(multihashes.encode(STREAM_ID.bytes, 'sha2-256'))
-    console.log(`StreamID as PeerID: ${peerid.toString()}`)
+    const streamidMultihash = multihashes.encode(STREAM_ID.bytes, 'sha2-256')
 
-    const closestPeers = await ipfs.dht.query(peerid)
+    // TODO make this work
+    // const initialProviders = await findProviders(ipfs, streamidMultihash)
+    // console.log(`Initial providers: `)
+    // console.log(initialProviders)
+
+    const closestPeers = await findClosestPeers(ipfs, streamidMultihash)
+
+    console.log(`Closest peers: `)
+    console.log(closestPeers)
+
+    for (const peerid of closestPeers) {
+        console.log(`attempting to emplace our peerid (${libp2p.peerId.toString()}) as a stream provider on peer ${peerid}`)
+        await provideToPeer(libp2p, peerid)
+    }
+}
+
+async function findClosestPeers(ipfs, streamidMultihash) {
+    const streamAsPeerID = new PeerID(streamidMultihash)
+    console.log(`StreamID as PeerID: ${streamAsPeerID.toString()}`)
+
+    const closestPeers = await ipfs.dht.query(streamAsPeerID)
     const peers = []
     for await (const peer of closestPeers) {
+        //console.log(JSON.stringify(peer, null, 2))
         // if (peer.type != EventTypes.PEER_RESPONSE && peer.type != EventTypes.FINAL_PEER) {// todo broken import
         if (peer.type != 2) {
             continue
@@ -37,8 +58,27 @@ async function main() {
         peers.push(peer.peer.id)
     }
     peers.sort()
-    console.log(`Closest peers: `)
-    console.log(peers)
+    return peers
+}
+
+async function provideToPeer(libp2p, peerid) {
+
+}
+
+
+async function findProviders(ipfs, streamidMultihash) {
+    const streamAsCID = new CID(streamidMultihash)
+    console.log(`StreamID as CID: ${streamAsCID.toString()}`)
+
+    const providers = []
+
+    const providersGenerator = await ipfs.dht.findProvs(streamAsCID)
+
+    for await (const provider of providersGenerator) {
+        providers.push(provider)
+    }
+    providers.sort()
+    return providers
 }
 
 main()
