@@ -6,6 +6,7 @@ const PeerID = require('peer-id')
 const multihashes = require('multihashes')
 const CID = require('cids')
 // const { EventTypes } = require('ipfs-core-types')  // TODO: why does this fail?
+//const KadDht = require('libp2p-kad-dht')
 
 const createLibp2p = require('./libp2p-node')
 
@@ -22,10 +23,12 @@ async function main() {
 
     console.log(`libp2p node running with PeerID: ${libp2p.peerId.toString()}`)
 
+    // Encode StreamID
     console.log(`streamid: ${STREAM_ID.toString()}`)
-
-    // Encode StreamID as PeerID
     const streamidMultihash = multihashes.encode(STREAM_ID.bytes, 'sha2-256')
+    console.log(`streamid sha256 multihash: ${streamidMultihash}`)
+    const streamidAsCid = new CID(streamidMultihash)
+    console.log(`streamid sha256 as CID ${streamidAsCid.toString()}`)
 
     // TODO make this work
     // const initialProviders = await findProviders(ipfs, streamidMultihash)
@@ -55,6 +58,7 @@ async function findClosestPeers(ipfs, streamidMultihash) {
         if (peer.type != 2) {
             continue
         }
+        //console.log(JSON.stringify(peer, null, 2))
         peers.push(peer.peer.id)
     }
     peers.sort()
@@ -62,7 +66,11 @@ async function findClosestPeers(ipfs, streamidMultihash) {
 }
 
 async function provideToPeer(libp2p, peerid) {
-
+    // //const network = new Network({dialer: libp2p, protocol: '/ipfs/lan/kad/1.0.0'}) // todo drop lan?
+    // const dht = KadDht.create({libp2p})
+    // await dht.start()
+    // const network = dht._wan._network
+    // await dht.stop()
 }
 
 
@@ -72,7 +80,7 @@ async function findProviders(ipfs, streamidMultihash) {
 
     const providers = []
 
-    const providersGenerator = await ipfs.dht.findProvs(streamAsCID)
+    const providersGenerator = await ipfs.dht.findProvs(streamAsCID.toString())
 
     for await (const provider of providersGenerator) {
         providers.push(provider)
