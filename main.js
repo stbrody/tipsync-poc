@@ -36,9 +36,9 @@ async function main() {
     console.log(`streamid sha256 as CID ${streamidAsCid.toString()}`)
 
     // TODO make this work
-    // const initialProviders = await findProviders(ipfs, streamidMultihash)
-    // console.log(`Initial providers: `)
-    // console.log(initialProviders)
+    const initialProviders = await findProviders(ipfs, streamidMultihash)
+    console.log(`Initial providers: `)
+    console.log(initialProviders)
 
     const closestPeers = await findClosestPeers(ipfs, streamidMultihash)
 
@@ -102,14 +102,19 @@ async function provideToPeer(libp2p, keyCID, peerid) {
 
 
 async function findProviders(ipfs, streamidMultihash) {
-    const streamAsCID = new CID(streamidMultihash)
-    console.log(`StreamID as CID: ${streamAsCID.toString()}`)
+    const streamAsCID = new CID(streamidMultihash).toV1()
+    console.log(`StreamID as CID: ${streamAsCID}`)
 
     const providers = []
 
-    const providersGenerator = await ipfs.dht.findProvs(streamAsCID.toString())
+    const providersGenerator = await ipfs.dht.findProvs(streamAsCID.toV1())
 
     for await (const provider of providersGenerator) {
+        if (provider.type != 2) {
+            continue
+        }
+
+        // console.log(JSON.stringify(provider))
         providers.push(provider)
     }
     providers.sort()
