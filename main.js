@@ -26,7 +26,7 @@ async function main() {
 
     const libp2p = await createLibp2p()
 
-    console.log(`libp2p node running with PeerID: ${libp2p.peerId.toString()}`)
+    console.log(`libp2p node running with PeerID: ${libp2p.peerId.toB58String()}`)
 
     // Encode StreamID
     console.log(`streamid: ${STREAM_ID.toString()}`)
@@ -55,7 +55,7 @@ async function main() {
 }
 
 async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
-    console.log(`looking up multiaddr for peerid ${peerid}`)
+    console.log(`looking up multiaddr for peerid ${peerid.toB58String()}`)
     const events = await ipfs.dht.findPeer(peerid)
     for await (const event of events) {
         //console.log(JSON.stringify(event, null, 2))
@@ -63,13 +63,8 @@ async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
             continue
         }
         console.log(`Adding multiaddrs for peer ${event.peer.id} to peer store.  Multiaddrs: ${JSON.stringify(event.peer.multiaddrs, null, 2)}`)
-//        console.log(JSON.stringify(event.peer, null, 2))
-
-
 
         await libp2p.peerStore.addressBook.add(peerid, event.peer.multiaddrs)
-
-
     }
 
     return null
@@ -77,7 +72,7 @@ async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
 
 async function findClosestPeers(ipfs, streamidMultihash) {
     const streamAsPeerID = new PeerID(streamidMultihash)
-    console.log(`StreamID as PeerID: ${streamAsPeerID.toB58String()}`)
+    console.log(`looking up closest peers to StreamID: ${streamAsPeerID.toB58String()}`)
 
     const closestPeers = await ipfs.dht.query(streamAsPeerID)
     const peers = []
@@ -87,7 +82,7 @@ async function findClosestPeers(ipfs, streamidMultihash) {
         if (peer.type != 2) {
             continue
         }
-        console.log(JSON.stringify(peer, null, 2))
+        //console.log(JSON.stringify(peer, null, 2))
         peers.push(PeerID.createFromB58String(peer.peer.id))
     }
     peers.sort()
