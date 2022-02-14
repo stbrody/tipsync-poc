@@ -9,9 +9,9 @@ const { multiaddr } = require('multiaddr')
 // const { EventTypes } = require('ipfs-core-types')  // TODO: why does this fail?
 //const KadDht = require('libp2p-kad-dht')
 const Message = require('libp2p-kad-dht/src/message')
-const {pipe} = require('it-pipe')
-const drain = require('it-drain')
-const lb = require('it-length-prefixed')
+//const {pipe} = require('it-pipe')
+//const drain = require('it-drain')
+//const lb = require('it-length-prefixed')
 
 const createLibp2p = require('./libp2p-node')
 
@@ -97,12 +97,12 @@ async function findClosestPeers(ipfs, streamidMultihash) {
 async function provideToPeer(libp2p, keyCID, peerid) {
     console.log(`attempting to emplace our peerid (${libp2p.peerId.toB58String()}) as a stream provider on peer ${peerid.toB58String()}`)
 
-    const msg = new Message(Message.TYPES.ADD_PROVIDER, keyCID.bytes, 0)
-    msg.providerPeers = [{id: libp2p.peerId, multiaddrs: libp2p.multiaddrs}]
+    //const msg = new Message(Message.TYPES.ADD_PROVIDER, keyCID.bytes, 0)
+    //msg.providerPeers = [{id: libp2p.peerId, multiaddrs: libp2p.multiaddrs}]
 
-    const { stream } = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
+    //const { stream } = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
 
-    await pipe([msg], lp.encode(), stream, drain)
+    //await pipe([msg], lp.encode(), stream, drain)
 }
 
 
