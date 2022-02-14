@@ -32,11 +32,10 @@ async function main() {
     console.log(`streamid: ${STREAM_ID.toString()}`)
     const streamidMultihash = multihashes.encode(STREAM_ID.bytes, 'sha2-256')
     console.log(`streamid sha256 multihash: ${streamidMultihash}`)
-    const streamidAsCid = new CID(streamidMultihash)
+    const streamidAsCid = new CID(streamidMultihash).toV1()
     console.log(`streamid sha256 as CID ${streamidAsCid.toString()}`)
 
-    // TODO make this work
-    const initialProviders = await findProviders(ipfs, streamidMultihash)
+    const initialProviders = await findProviders(ipfs, streamidAsCid)
     console.log(`Initial providers: `)
     console.log(initialProviders)
 
@@ -62,7 +61,7 @@ async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
         if (event.type != 2) {
             continue
         }
-        console.log(`Adding multiaddrs for peer ${event.peer.id} to peer store.  Multiaddrs: ${JSON.stringify(event.peer.multiaddrs, null, 2)}`)
+        //console.log(`Adding multiaddrs for peer ${event.peer.id} to peer store.  Multiaddrs: ${JSON.stringify(event.peer.multiaddrs, null, 2)}`)
 
         await libp2p.peerStore.addressBook.add(peerid, event.peer.multiaddrs)
     }
@@ -92,22 +91,20 @@ async function findClosestPeers(ipfs, streamidMultihash) {
 async function provideToPeer(libp2p, keyCID, peerid) {
     console.log(`attempting to emplace our peerid (${libp2p.peerId.toB58String()}) as a stream provider on peer ${peerid.toB58String()}`)
 
-    //const msg = new Message(Message.TYPES.ADD_PROVIDER, keyCID.bytes, 0)
-    //msg.providerPeers = [{id: libp2p.peerId, multiaddrs: libp2p.multiaddrs}]
+    const msg = new Message.Message(Message.MESSAGE_TYPE.ADD_PROVIDER, keyCID.bytes, 0)
+    msg.providerPeers = [{id: libp2p.peerId, multiaddrs: libp2p.multiaddrs}]
 
-    //const { stream } = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
-
-    //await pipe([msg], lp.encode(), stream, drain)
+    // const { stream } = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
+    //
+    // await pipe([msg], lp.encode(), stream, drain)
 }
 
 
-async function findProviders(ipfs, streamidMultihash) {
-    const streamAsCID = new CID(streamidMultihash).toV1()
-    console.log(`StreamID as CID: ${streamAsCID}`)
-
+async function findProviders(ipfs, streamidCID) {
+    console.log(`Looking up providers for CID: ${streamidCID}`)
     const providers = []
 
-    const providersGenerator = await ipfs.dht.findProvs(streamAsCID.toV1())
+    const providersGenerator = await ipfs.dht.findProvs(streamidCID)
 
     for await (const provider of providersGenerator) {
         if (provider.type != 2) {
