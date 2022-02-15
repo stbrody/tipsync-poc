@@ -4,7 +4,7 @@ const IpfsClient = require('ipfs-http-client')
 const { StreamID } = require('@ceramicnetwork/streamid')
 const PeerID = require('peer-id')
 const multihashes = require('multihashes')
-const CID = require('cids')
+const {CID} = require('multiformats/cid')
 const { multiaddr } = require('multiaddr')
 // const { EventTypes } = require('ipfs-core-types')  // TODO: why does this fail?
 //const KadDht = require('libp2p-kad-dht')
@@ -32,14 +32,20 @@ async function main() {
     console.log(`streamid: ${STREAM_ID.toString()}`)
     const streamidMultihash = multihashes.encode(STREAM_ID.bytes, 'sha2-256')
     console.log(`streamid sha256 multihash: ${streamidMultihash}`)
-    const streamidAsCid = new CID(streamidMultihash).toV1()
+    //const streamidAsCidV0 = new CID(streamidMultihash)
+    //const streamidAsCid = streamidAsCidV0.toV1()
+    const streamidAsCidV0 = CID.decode(streamidMultihash)
+    const streamidAsCid = streamidAsCidV0.toV1()
     console.log(`streamid sha256 as CID ${streamidAsCid.toString()}`)
+
+    // make sure libp2p instance believes itself to be a provider of the stream
+    //await libp2p.contentRouting.provide(streamidAsCid)
 
     const initialProviders = await findProviders(ipfs, streamidAsCid)
     console.log(`Initial providers: `)
     console.log(initialProviders)
 
-    const closestPeers = await findClosestPeers(ipfs, streamidMultihash)
+    const closestPeers = await findClosestPeers(ipfs, streamidAsCid)
 
     console.log(`Closest peers: `)
     console.log(closestPeers.map((peerid) => peerid.toB58String()))
@@ -51,6 +57,10 @@ async function main() {
     for (const peerid of closestPeers) {
         await provideToPeer(libp2p, streamidAsCid, peerid)
     }
+
+    const finalProviders = await findProviders(ipfs, streamidAsCid)
+    console.log(`Final providers: `)
+    console.log(finalProviders)
 }
 
 async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
@@ -69,9 +79,8 @@ async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
     return null
 }
 
-async function findClosestPeers(ipfs, streamidMultihash) {
-    const streamAsPeerID = new PeerID(streamidMultihash)
-    console.log(`looking up closest peers to StreamID: ${streamAsPeerID.toB58String()}`)
+async function findClosestPeers(ipfs, streamAsCID) {
+    const streamAsPeerID = PeerID.createFromCID(streamAsCID)
 
     const closestPeers = await ipfs.dht.query(streamAsPeerID)
     const peers = []
@@ -94,9 +103,12 @@ async function provideToPeer(libp2p, keyCID, peerid) {
     const msg = new Message.Message(Message.MESSAGE_TYPE.ADD_PROVIDER, keyCID.bytes, 0)
     msg.providerPeers = [{id: libp2p.peerId, multiaddrs: libp2p.multiaddrs}]
 
-    const { stream } = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
-
-    //await pipe([msg], lp.encode(), stream, drain)
+    try {
+        const {stream} = await libp2p.dialProtocol(peerid, '/ipfs/kad/1.0.0')
+        await pipe([msg.serialize()], lp.encode(), stream, drain)
+    } catch (err) {
+        console.warn(err.message)
+    }
 }
 
 
