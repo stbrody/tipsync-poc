@@ -25,8 +25,10 @@ async function main() {
     console.log(`connected to go-ipfs node with PeerID: ${(await ipfs.id()).id}`)
 
     const libp2p = await createLibp2p()
+    await libp2p.start()
 
     console.log(`libp2p node running with PeerID: ${libp2p.peerId.toB58String()}`)
+    console.log(`libp2p node has multiaddrs: ${libp2p.multiaddrs}`)
 
     // Encode StreamID
     console.log(`streamid: ${STREAM_ID.toString()}`)
@@ -58,9 +60,16 @@ async function main() {
         await provideToPeer(libp2p, streamidAsCid, peerid)
     }
 
+    console.log('adding self as provider')
+    await libp2p.contentRouting.provide(streamidAsCid)
+
     const finalProviders = await findProviders(ipfs, streamidAsCid)
     console.log(`Final providers: `)
     console.log(finalProviders)
+
+    console.log(`complete, shutting down`)
+    await libp2p.stop()
+    await ipfs.stop()
 }
 
 async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
