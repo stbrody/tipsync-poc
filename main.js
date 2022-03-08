@@ -43,23 +43,28 @@ async function main() {
     // make sure libp2p instance believes itself to be a provider of the stream
     //await libp2p.contentRouting.provide(streamidAsCid)
 
+    console.log(`=======================================================`)
     const initialProviders = await findProviders(ipfs, streamidAsCid)
     console.log(`Initial providers: `)
     console.log(initialProviders)
 
+    console.log(`=======================================================`)
     const closestPeers = await findClosestPeers(ipfs, streamidAsCid)
 
     console.log(`Closest peers: `)
     console.log(closestPeers.map((peerid) => peerid.toB58String()))
 
+    console.log(`=======================================================`)
     for (const peerid of closestPeers) {
         await findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid)
     }
 
+    console.log(`=======================================================`)
     for (const peerid of closestPeers) {
         await provideToPeer(libp2p, streamidAsCid, peerid)
     }
 
+    console.log(`=======================================================`)
     console.log('adding self as provider')
     await libp2p.contentRouting.provide(streamidAsCid)
 
@@ -74,7 +79,7 @@ async function main() {
 
 async function findMultiaddrAndAddToPeerStore(ipfs, libp2p, peerid) {
     console.log(`looking up multiaddr for peerid ${peerid.toB58String()}`)
-    const events = await ipfs.dht.findPeer(peerid)
+    const events = await ipfs.dht.findPeer(peerid, {timeout: 30000})
     for await (const event of events) {
         //console.log(JSON.stringify(event, null, 2))
         if (event.type != 2) {
